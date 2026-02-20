@@ -1,0 +1,53 @@
+name: Build SukiSU Ultra Kernel for raphael
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y bc bison build-essential flex git libelf-dev libssl-dev python3 unzip zip cpio lzop gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+
+      - name: Setup Proton Clang (推荐 13\~17 for 4.14 kernel)
+        run: |
+          git clone --depth=1 https://github.com/kdrag0n/proton-clang.git --branch clang-13.0.1 /opt/clang
+          echo "/opt/clang/bin" >> $GITHUB_PATH
+
+      - name: Integrate SukiSU Ultra
+        run: |
+          curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s main
+          bash -s susfs-main
+
+      - name: Build Kernel
+        run: |
+          export ARCH=arm64
+          export SUBARCH=arm64
+          export CROSS_COMPILE=aarch64-linux-gnu-
+          export CC=clang
+          export CLANG_TRIPLE=aarch64-linux-gnu-
+          make O=out sm8150_perf_defconfig   # 或 raphael_defconfig，看源码 configs 目录确认
+          make O=out -j$(nproc --all)
+
+      - name: Pack AnyKernel3
+        run: |
+          git clone https://github.com/osm0sis/AnyKernel3 --depth=1
+          cp out/arch/arm64/boot/Image.gz-dtb AnyKernel3/
+          # 如果有 dtbo: cp out/arch/arm64/boot/dtbo.img AnyKernel3/
+          cd AnyKernel3
+          zip -r9 ../SukiSU-Raphael-$(date +%Y%m%d).zip *
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kernel-zip
+          path: *.zip
