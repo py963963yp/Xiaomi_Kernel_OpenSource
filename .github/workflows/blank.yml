@@ -45,9 +45,3 @@ jobs:
           # 如果有 dtbo: cp out/arch/arm64/boot/dtbo.img AnyKernel3/
           cd AnyKernel3
           zip -r9 ../SukiSU-Raphael-$(date +%Y%m%d).zip *
-
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: kernel-zip
-          path: *.zip
