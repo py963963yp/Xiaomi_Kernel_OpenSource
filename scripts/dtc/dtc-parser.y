@@ -18,6 +18,7 @@
  *                                                                   USA
  */
 %{
+extern YYLTYPE yylloc;
 #include <stdio.h>
 #include <inttypes.h>
 
